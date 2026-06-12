@@ -5,13 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>撮影ナビゲーションシステム</title>
     <link rel="stylesheet" href="style.css">
-    <!-- 通信ライブラリとOpenCV.jsの読み込み -->
+    
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-    <script async src="https://docs.opencv.org/4.x/opencv.js" id="opencv-src"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/opencv.js/4.5.5/opencv.js" id="opencv-src"></script>
 </head>
 <body>
 
-    <!-- 🌐 初期接続・役割選択画面 -->
     <div id="setup-screen" class="panel">
         <h2>撮影ナビゲーションシステム</h2>
         <p id="loading-text">システムを準備中（OpenCV読み込み中）...</p>
@@ -21,7 +20,6 @@
         </div>
     </div>
 
-    <!-- 📱 スマホ用画面（配信専用：極シンプル） -->
     <div id="smartphone-screen" class="panel" style="display: none;">
         <h2>📱 カメラ配信中</h2>
         <div id="room-code-display">接続コード: <span id="my-id-text">---</span></div>
@@ -30,7 +28,6 @@
         <div id="phone-status">映像送信待ち...</div>
     </div>
 
-    <!-- 💻 パソコン用画面（ナビゲーション・画像解析専用） -->
     <div id="pc-screen" class="panel" style="display: none;">
         <h2>💻 撮影ナビゲーション</h2>
         <div id="connect-form">
@@ -44,5 +41,6 @@
         </div>
     </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/opencv.js/4.5.5/opencv.js" id="opencv-src"></script></body>
+    <script src="app.js"></script>
+</body>
 </html>
