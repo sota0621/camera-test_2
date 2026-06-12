@@ -10,7 +10,22 @@ let lockCounter = 0;
 const REQUIRED_FRAMES = 20; // 安定判定（約0.6秒）
 let audioCtx = null;
 
-// OpenCVの読み込み監視
+// 💡 OpenCVの読み込みをチェックする安全な関数
+function checkOpenCVReady() {
+    // cv が存在し、初期化が完了していればボタンを表示する
+    if (typeof cv !== 'undefined' && cv.Mat) {
+        document.getElementById('loading-text').style.display = 'none';
+        document.getElementById('setup-buttons').style.display = 'block';
+    } else {
+        // まだ読み込まれていなければ0.5秒後に再チェック
+        setTimeout(checkOpenCVReady, 500);
+    }
+}
+
+// ページ読み込み時にチェックを開始
+window.addEventListener('DOMContentLoaded', checkOpenCVReady);
+
+// 念のため、HTML側のscriptタグのloadイベント用にも保険として残す
 document.getElementById('opencv-src').addEventListener('load', () => {
     document.getElementById('loading-text').style.display = 'none';
     document.getElementById('setup-buttons').style.display = 'block';
@@ -38,7 +53,6 @@ document.getElementById('make-smartphone-btn').addEventListener('click', async (
     document.getElementById('smartphone-screen').style.display = 'block';
     videoElement = document.getElementById('smartphone-video');
 
-    // ランダムな4桁の接続コードを生成してPeerを初期化
     const randomId = Math.floor(1000 + Math.random() * 9000).toString();
     peer = new Peer(randomId);
 
@@ -46,7 +60,6 @@ document.getElementById('make-smartphone-btn').addEventListener('click', async (
         document.getElementById('my-id-text').innerText = id;
     });
 
-    // 超広角カメラ（環境・背面）のストリームを取得
     try {
         currentStream = await navigator.mediaDevices.getUserMedia({
             audio: false,
@@ -57,7 +70,6 @@ document.getElementById('make-smartphone-btn').addEventListener('click', async (
         document.getElementById('phone-status').innerText = "カメラ起動エラー: " + err.message;
     }
 
-    // パソコンから接続要求（コール）が来たら映像を送信する
     peer.on('call', (call) => {
         call.answer(currentStream);
         document.getElementById('phone-status').innerText = "🟢 パソコンと接続中（映像送信中）";
@@ -71,7 +83,17 @@ document.getElementById('make-pc-btn').addEventListener('click', () => {
     document.getElementById('pc-screen').style.display = 'block';
     videoElement = document.getElementById('received-video');
     
-    peer = new Peer(); // PC側は自動割り当てIDでOK
+    const connectBtn = document.getElementById('connect-btn');
+    connectBtn.disabled = true;
+    document.getElementById('status-alert').innerText = "🔄 通信サーバーに接続中...";
+
+    peer = new Peer(); 
+
+    // 💡 PC側の準備が正式に完了したらボタンを押せるようにする
+    peer.on('open', (id) => {
+        connectBtn.disabled = false;
+        document.getElementById('status-alert').innerText = "✅ 準備完了。スマホのコードを入力してください";
+    });
 });
 
 // 💻 パソコン側：スマホへの接続ボタン押下時
@@ -80,19 +102,29 @@ document.getElementById('connect-btn').addEventListener('click', () => {
     if (!targetId) return alert("接続コードを入力してください");
 
     document.getElementById('connect-form').style.display = 'none';
+    document.getElementById('status-alert').innerText = "🔄 スマホと通信を確立中...";
     
-    // ダミーのメディアストリーム（受信用なので空）を投げて相手の映像を要求
-    const call = peer.call(targetId, new MediaStream());
+    // 💡 空のストリームだとエラーになるブラウザ対策（1x1のダミー映像トラックを作成）
+    const dummyCanvas = document.createElement('canvas');
+    dummyCanvas.width = 1; 
+    dummyCanvas.height = 1;
+    const dummyStream = dummyCanvas.captureStream(1); 
+
+    const call = peer.call(targetId, dummyStream);
     
     call.on('stream', (remoteStream) => {
         videoElement.srcObject = remoteStream;
-        videoElement.play();
+        
+        // 💡 自動再生ブロック対策
+        videoElement.muted = true; 
+        videoElement.play().catch(err => {
+            console.log("自動再生がブロックされました:", err);
+        });
 
         videoElement.onloadedmetadata = () => {
             canvasElement.width = videoElement.videoWidth;
             canvasElement.height = videoElement.videoHeight;
             
-            // OpenCVのメモリ初期化
             src = new cv.Mat(videoElement.videoHeight, videoElement.videoWidth, cv.CV_8UC4);
             dst = new cv.Mat(videoElement.videoHeight, videoElement.videoWidth, cv.CV_8UC4);
             hsv = new cv.Mat();
@@ -117,7 +149,6 @@ function processVideo() {
     cv.cvtColor(dst, hsv, cv.COLOR_RGBA2RGB);
     cv.cvtColor(hsv, hsv, cv.COLOR_RGB2HSV);
 
-    // 黄緑色の色抽出マスク（環境によって適宜数値を調整）
     let low = cv.matFromArray(3, 1, cv.CV_8U, [35, 70, 60]);
     let high = cv.matFromArray(3, 1, cv.CV_8U, [85, 255, 255]);
     cv.inRange(hsv, low, high, mask);
@@ -145,7 +176,6 @@ function processVideo() {
 
     const alertBox = document.getElementById('status-alert');
 
-    // 4点検知の判定ロジック
     if (validCenters.length === 4) {
         lockCounter++;
 
@@ -159,7 +189,7 @@ function processVideo() {
             alertBox.className = "alert-locked";
             ctx.strokeStyle = '#00f5d4';
             ctx.lineWidth = 6;
-            if (lockCounter % 20 === 0) playBeep(880, 0.05); // 定期的な確定音
+            if (lockCounter % 20 === 0) playBeep(880, 0.05);
         } else {
             alertBox.innerText = "🟡 検出中... そのまま静止してください";
             alertBox.className = "alert-detecting";
