@@ -25,11 +25,29 @@ function checkOpenCVReady() {
 // ページ読み込み時にチェックを開始
 window.addEventListener('DOMContentLoaded', checkOpenCVReady);
 
-// 念のため、HTML側のscriptタグのloadイベント用にも保険として残す
-document.getElementById('opencv-src').addEventListener('load', () => {
-    document.getElementById('loading-text').style.display = 'none';
-    document.getElementById('setup-buttons').style.display = 'block';
-});
+// // 念のため、HTML側のscriptタグのloadイベント用にも保険として残す
+// document.getElementById('opencv-src').addEventListener('load', () => {
+//     document.getElementById('loading-text').style.display = 'none';
+//     document.getElementById('setup-buttons').style.display = 'block';
+// });
+// ❌ 変更前：元の読み込み監視処理（これを消す）
+// document.getElementById('opencv-src').addEventListener('load', () => {
+//     document.getElementById('loading-text').style.display = 'none';
+//     document.getElementById('setup-buttons').style.display = 'block';
+// });
+
+// 💡 変更後：OpenCVが読み込まれたか自動で何度もチェックする安全な関数（ここに差し替え）
+function checkOpenCVReady() {
+    if (typeof cv !== 'undefined' && cv.Mat) {
+        document.getElementById('loading-text').style.display = 'none';
+        document.getElementById('setup-buttons').style.display = 'block';
+    } else {
+        // まだ読み込まれていなければ0.3秒後に再チェック
+        setTimeout(checkOpenCVReady, 300);
+    }
+}
+// ページが開いた瞬間にチェックを開始する
+window.addEventListener('DOMContentLoaded', checkOpenCVReady);
 
 // ナビゲーション用の電子音
 function playBeep(freq, duration) {
