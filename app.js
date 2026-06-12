@@ -80,13 +80,18 @@ document.getElementById('connect-btn').addEventListener('click', () => {
     if (!targetId) return alert("接続コードを入力してください");
 
     document.getElementById('connect-form').style.display = 'none';
+    document.getElementById('status-alert').innerText = "🔍 スマホからの発信を待っています...";
     
     // ダミーのメディアストリーム（受信用なので空）を投げて相手の映像を要求
     const call = peer.call(targetId, new MediaStream());
     
-    call.on('stream', (remoteStream) => {
-        videoElement.srcObject = remoteStream;
-        videoElement.play();
+    // 自分（PC）宛てにコールが来たら受信する設定に変更
+    peer.on('call', (call) => {
+        call.answer(); // 相手（スマホ）の映像だけを受け取る
+        
+        call.on('stream', (remoteStream) => {
+            videoElement.srcObject = remoteStream;
+            videoElement.play();
 
         videoElement.onloadedmetadata = () => {
             canvasElement.width = videoElement.videoWidth;
