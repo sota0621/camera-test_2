@@ -10,33 +10,7 @@ let lockCounter = 0;
 const REQUIRED_FRAMES = 20; // 安定判定（約0.6秒）
 let audioCtx = null;
 
-// 💡 OpenCVの読み込みをチェックする安全な関数
-function checkOpenCVReady() {
-    // cv が存在し、初期化が完了していればボタンを表示する
-    if (typeof cv !== 'undefined' && cv.Mat) {
-        document.getElementById('loading-text').style.display = 'none';
-        document.getElementById('setup-buttons').style.display = 'block';
-    } else {
-        // まだ読み込まれていなければ0.5秒後に再チェック
-        setTimeout(checkOpenCVReady, 500);
-    }
-}
-
-// ページ読み込み時にチェックを開始
-window.addEventListener('DOMContentLoaded', checkOpenCVReady);
-
-// // 念のため、HTML側のscriptタグのloadイベント用にも保険として残す
-// document.getElementById('opencv-src').addEventListener('load', () => {
-//     document.getElementById('loading-text').style.display = 'none';
-//     document.getElementById('setup-buttons').style.display = 'block';
-// });
-// ❌ 変更前：元の読み込み監視処理（これを消す）
-// document.getElementById('opencv-src').addEventListener('load', () => {
-//     document.getElementById('loading-text').style.display = 'none';
-//     document.getElementById('setup-buttons').style.display = 'block';
-// });
-
-// 💡 変更後：OpenCVが読み込まれたか自動で何度もチェックする安全な関数（ここに差し替え）
+// 💡 OpenCVが読み込まれたか自動で何度もチェックする安全な関数
 function checkOpenCVReady() {
     if (typeof cv !== 'undefined' && cv.Mat) {
         document.getElementById('loading-text').style.display = 'none';
